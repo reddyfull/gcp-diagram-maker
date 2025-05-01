@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Azure Diagram Maker - Session</title>
+  <link href="https://fonts.googleapis.com/css?family=Roboto:300,400,500,700&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Roboto', sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #f5f5f5;
+    }
+    .app {
+      display: flex;
+      min-height: 100vh;
+    }
+    .sidebar {
+      width: 240px;
+      background-color: #1e1e1e;
+      color: #fff;
+      flex-shrink: 0;
+    }
+    .sidebar-header {
+      padding: 20px;
+      border-bottom: 1px solid #333;
+    }
+    .sidebar-menu {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+    .sidebar-menu li {
+      padding: 15px 20px;
+      border-bottom: 1px solid #333;
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+    .sidebar-menu li:hover {
+      background-color: #333;
+    }
+    .sidebar-menu li.active {
+      background-color: #0078d4;
+    }
+    .main-content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+    .header {
+      background-color: #333;
+      color: white;
+      padding: 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .content {
+      padding: 20px;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+    .diagram-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+    .diagram-container {
+      display: flex;
+      flex: 1;
+      gap: 20px;
+    }
+    .diagram-panel, .code-panel {
+      flex: 1;
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      padding: 20px;
+      min-height: 500px;
+      overflow: auto;
+    }
+    .panel-header {
+      font-size: 18px;
+      font-weight: 500;
+      margin-bottom: 15px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid #eee;
+    }
+    .code-content {
+      background: #f7f7f7;
+      padding: 15px;
+      border-radius: 5px;
+      font-family: monospace;
+      white-space: pre-wrap;
+      height: 400px;
+      overflow: auto;
+    }
+    .btn {
+      background: #0078d4;
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+    }
+    .btn:hover {
+      background: #0063b1;
+    }
+    .session-id {
+      font-weight: bold;
+      color: #0078d4;
+    }
+    .loading {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100%;
+    }
+    .spinner {
+      border: 4px solid rgba(0, 120, 212, 0.3);
+      border-radius: 50%;
+      border-top: 4px solid #0078d4;
+      width: 40px;
+      height: 40px;
+      animation: spin 1s linear infinite;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+  </style>
+  <!-- Load Mermaid.js for diagram rendering -->
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10.0.0/dist/mermaid.min.js"></script>
+</head>
+<body>
+  <div class="app">
+    <!-- Sidebar -->
+    <div class="sidebar">
+      <div class="sidebar-header">
+        <h2>Azure Diagram Maker</h2>
+      </div>
+      <ul class="sidebar-menu">
+        <li onclick="window.location.href='/'">Dashboard</li>
+        <li onclick="window.location.href='/diagram-upload'">Diagram Upload</li>
+        <li class="active">Session Viewer</li>
+        <li onclick="window.location.href='/icons'">Icon Explorer</li>
+        <li onclick="window.location.href='/terraform'">Terraform Preview</li>
+      </ul>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+      <div class="header">
+        <h1>Session Viewer</h1>
+        <div>
+          <button class="btn" onclick="toggleTheme()">Toggle Theme</button>
+        </div>
+      </div>
+
+      <div class="content">
+        <div class="diagram-header">
+          <h2>Session: <span class="session-id" id="session-id">Loading...</span></h2>
+          <button class="btn" onclick="exportDiagram()">Export Diagram</button>
+        </div>
+
+        <div class="diagram-container">
+          <!-- Diagram Panel -->
+          <div class="diagram-panel">
+            <div class="panel-header">Architecture Diagram</div>
+            <div id="diagram-content">
+              <div class="loading">
+                <div class="spinner"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Code Panel -->
+          <div class="code-panel">
+            <div class="panel-header">Terraform Code</div>
+            <div id="code-content" class="code-content">Loading code...</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Initialize Mermaid
+    mermaid.initialize({ startOnLoad: false });
+
+    // Get session ID from URL
+    function getSessionId() {
+      // First try getting from URL path
+      const path = window.location.pathname;
+      const pathMatch = path.match(/session[_-]([a-zA-Z0-9_-]+)/);
+      if (pathMatch) {
+        return pathMatch[0];
+      }
+      
+      // Then try from query parameters
+      const urlParams = new URLSearchParams(window.location.search);
+      const paramId = urlParams.get('id');
+      if (paramId) {
+        return paramId;
+      }
+      
+      // Then from hash
+      const hash = window.location.hash.substring(1);
+      if (hash.includes('session_')) {
+        const hashMatch = hash.match(/session[_-]([a-zA-Z0-9_-]+)/);
+        if (hashMatch) {
+          return hashMatch[0];
+        }
+      }
+      
+      // Last resort - get any session pattern from the entire URL
+      const fullUrl = window.location.href;
+      const fullUrlMatch = fullUrl.match(/session[_-]([a-zA-Z0-9_-]+)/);
+      if (fullUrlMatch) {
+        return fullUrlMatch[0];
+      }
+      
+      return null;
+    }
+
+    // Default data for when the API is not available
+    const defaultData = {
+      mermaid_diagram: `graph TD;
+        subgraph Azure
+          VNet["Azure VNet (10.0.0.0/16)"]
+          NSG["Network Security Group"]
+          VM1["Virtual Machine (App)"]
+          VM2["Virtual Machine (DB)"]
+          LB["Load Balancer"]
+          Storage["Azure Storage"]
+        end
+        
+        VNet --> NSG
+        NSG --> VM1
+        NSG --> VM2
+        Internet --> LB
+        LB --> VM1
+        VM1 --> VM2
+        VM2 --> Storage`,
+      
+      infrastructure_code: [
+        {
+          filename: "main.tf",
+          content: `# Terraform infrastructure code
+
+provider "azurerm" {
+  features {}
+}
+
+resource "azurerm_resource_group" "example" {
+  name     = "example-resource-group"
+  location = "East US"
+}
+
+resource "azurerm_virtual_network" "example" {
+  name                = "example-vnet"
+  address_space       = ["10.0.0.0/16"]
+  location            = azurerm_resource_group.example.location
+  resource_group_name = azurerm_resource_group.example.name
+}
+
+resource "azurerm_subnet" "example" {
+  name                 = "internal"
+  resource_group_name  = azurerm_resource_group.example.name
+  virtual_network_name = azurerm_virtual_network.example.name
+  address_prefixes     = ["10.0.2.0/24"]
+}
+
+resource "azurerm_network_security_group" "example" {
+  name                = "example-nsg"
+  location            = azurerm_resource_group.example.location
+  resource_group_name = azurerm_resource_group.example.name
+}
+
+resource "azurerm_network_interface" "example" {
+  name                = "example-nic"
+  location            = azurerm_resource_group.example.location
+  resource_group_name = azurerm_resource_group.example.name
+
+  ip_configuration {
+    name                          = "internal"
+    subnet_id                     = azurerm_subnet.example.id
+    private_ip_address_allocation = "Dynamic"
+  }
+}
+
+resource "azurerm_linux_virtual_machine" "example" {
+  name                = "example-vm"
+  resource_group_name = azurerm_resource_group.example.name
+  location            = azurerm_resource_group.example.location
+  size                = "Standard_B2s"
+  admin_username      = "adminuser"
+  
+  network_interface_ids = [
+    azurerm_network_interface.example.id,
+  ]
+
+  admin_ssh_key {
+    username   = "adminuser"
+    public_key = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQ=="
+  }
+
+  os_disk {
+    caching              = "ReadWrite"
+    storage_account_type = "Standard_LRS"
+  }
+
+  source_image_reference {
+    publisher = "Canonical"
+    offer     = "UbuntuServer"
+    sku       = "18.04-LTS"
+    version   = "latest"
+  }
+}`
+        }
+      ]
+    };
+
+    // Load session data
+    async function loadSession() {
+      const sessionId = getSessionId();
+      console.log('Session ID:', sessionId);
+      
+      if (!sessionId) {
+        document.getElementById('session-id').innerText = 'No session ID found';
+        useFallbackData();
+        return;
+      }
+      
+      document.getElementById('session-id').innerText = sessionId;
+      
+      try {
+        const response = await fetch(`/api/ai/diagram/sessions/${sessionId}`);
+        if (!response.ok) {
+          throw new Error(`API error: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        renderData(data);
+      } catch (error) {
+        console.error('Failed to load session data:', error);
+        // Use fallback data
+        useFallbackData();
+      }
+    }
+
+    // Render diagram and code with the provided data
+    function renderData(data) {
+      // Render mermaid diagram
+      const diagramContent = document.getElementById('diagram-content');
+      diagramContent.innerHTML = `<pre class="mermaid">${data.mermaid_diagram || defaultData.mermaid_diagram}</pre>`;
+      
+      // Initialize mermaid rendering
+      mermaid.init(undefined, document.querySelectorAll('.mermaid'));
+      
+      // Render infrastructure code
+      const codeContent = document.getElementById('code-content');
+      const code = data.infrastructure_code && data.infrastructure_code.length > 0
+        ? data.infrastructure_code[0].content
+        : defaultData.infrastructure_code[0].content;
+        
+      codeContent.textContent = code;
+    }
+
+    // Use fallback data when API is not available
+    function useFallbackData() {
+      renderData(defaultData);
+    }
+
+    // Export diagram as SVG
+    function exportDiagram() {
+      const svgElement = document.querySelector('#diagram-content svg');
+      
+      if (!svgElement) {
+        alert('Diagram is not ready yet. Please wait for it to render.');
+        return;
+      }
+      
+      const svgData = new XMLSerializer().serializeToString(svgElement);
+      const svgBlob = new Blob([svgData], {type: 'image/svg+xml'});
+      const svgUrl = URL.createObjectURL(svgBlob);
+      
+      const downloadLink = document.createElement('a');
+      downloadLink.href = svgUrl;
+      downloadLink.download = `diagram-${getSessionId() || 'export'}.svg`;
+      document.body.appendChild(downloadLink);
+      downloadLink.click();
+      document.body.removeChild(downloadLink);
+      
+      URL.revokeObjectURL(svgUrl);
+    }
+
+    // Toggle light/dark theme
+    function toggleTheme() {
+      document.body.classList.toggle('dark-theme');
+    }
+
+    // Load the session when the page is ready
+    window.onload = loadSession;
+  </script>
+</body>
+</html>

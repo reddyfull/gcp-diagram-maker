@@ -1,0 +1,17 @@
+# Redirect all session-related URLs to our direct viewer
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  
+  # Match various session URL patterns
+  RewriteCond %{REQUEST_URI} .*/session_[A-Za-z0-9_-]+.*$ [NC]
+  RewriteRule ^(.*)$ /direct-session.html [L]
+
+  # Alternatively, capture the session ID and pass it as a query parameter
+  # RewriteRule ^.*(session_[A-Za-z0-9_-]+).*$ /direct-session.html?id=$1 [L,QSA]
+</IfModule>
+
+# For environments without mod_rewrite
+<IfModule !mod_rewrite.c>
+  # Handle 404 errors with our custom session handling page
+  ErrorDocument 404 /direct-session.html
+</IfModule> 

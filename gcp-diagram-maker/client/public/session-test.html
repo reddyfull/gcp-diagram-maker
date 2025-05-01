@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Session Test</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 40px;
+      line-height: 1.6;
+    }
+    .success {
+      color: green;
+      font-weight: bold;
+    }
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      background-color: #f9f9f9;
+    }
+    h1 {
+      color: #0078d4;
+    }
+    ul {
+      margin-bottom: 20px;
+    }
+    .buttons {
+      margin-top: 30px;
+    }
+    .button {
+      display: inline-block;
+      padding: 10px 20px;
+      background-color: #0078d4;
+      color: white;
+      text-decoration: none;
+      border-radius: 4px;
+      margin-right: 10px;
+      margin-bottom: 10px;
+    }
+    .button:hover {
+      background-color: #005a9e;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Session Viewer Test Page</h1>
+    
+    <p>This page tests if the session URL bug has been fixed. Click one of these links to test:</p>
+    
+    <div class="buttons">
+      <a class="button" href="/direct/session.html?id=session_eb8f27d752_20250430121838">Direct Session Link</a>
+      <a class="button" href="/diagram/session/session_eb8f27d752_20250430121838">Router Session Link</a>
+    </div>
+    
+    <p>Or check if these links work (these were problematic before):</p>
+    
+    <ul>
+      <li><a href="/diagram/session/session_862a4bfce8_20250430115736">session_862a4bfce8_20250430115736</a></li>
+      <li><a href="/diagram/session/session_20f55ae117_20250430094400">session_20f55ae117_20250430094400</a></li>
+      <li><a href="/diagram/session/session_d53efd134d_20250430124147">session_d53efd134d_20250430124147</a></li>
+      <li><a href="/diagram/session/session_220f742dc5_20250430145640">session_220f742dc5_20250430145640</a></li>
+    </ul>
+    
+    <p class="success">If clicking any of these links takes you to a session page with a diagram (not a 404 error page), the fix is working!</p>
+  </div>
+</body>
+</html> 

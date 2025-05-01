@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Redirecting to Session...</title>
+  <script>
+    // Force redirect to the proper session URL format
+    (function() {
+      // Parse the URL and extract the session ID
+      let path = window.location.pathname;
+      let url = new URL(window.location.href);
+      let redirectTo = url.searchParams.get('to') || '';
+      
+      console.log("REDIRECT PAGE LOADED");
+      console.log("Current path:", path);
+      console.log("URL params:", url.searchParams.toString());
+      
+      // If a redirect target was specified
+      if (redirectTo) {
+        console.log("Redirecting to:", redirectTo);
+        window.location.replace(redirectTo);
+        return;
+      }
+      
+      // Otherwise try to extract session ID from current URL
+      let sessionIdMatch = path.match(/session_[a-zA-Z0-9_-]+/);
+      if (sessionIdMatch) {
+        let sessionId = sessionIdMatch[0];
+        let newUrl = window.location.origin + "/diagram/session/" + sessionId;
+        console.log("Found session ID:", sessionId);
+        console.log("Redirecting to:", newUrl);
+        window.location.replace(newUrl);
+      } else {
+        // Fallback to dashboard
+        window.location.replace(window.location.origin);
+      }
+    })();
+  </script>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: #f4f7fa;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      margin: 0;
+      padding: 20px;
+      color: #333;
+    }
+    .container {
+      text-align: center;
+      max-width: 600px;
+      background: white;
+      border-radius: 8px;
+      padding: 20px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    }
+    h1 {
+      color: #0078d4;
+      margin-top: 0;
+    }
+    .spinner {
+      border: 4px solid rgba(0, 120, 212, 0.2);
+      border-left-color: #0078d4;
+      border-radius: 50%;
+      width: 36px;
+      height: 36px;
+      animation: spin 1s linear infinite;
+      margin: 20px auto;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Redirecting to Session</h1>
+    <div class="spinner"></div>
+    <p>If you're not redirected automatically, <a href="/">click here to return to dashboard</a>.</p>
+  </div>
+</body>
+</html> 
